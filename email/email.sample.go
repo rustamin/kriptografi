@@ -3,11 +3,9 @@ package email
 import (
 	"log"
 	"net/smtp"
-
-
 )
 
-func SendMail(recipientEmail string, kode_verifikasi string) {
+func SendMailExample(recipientEmail string, kode_verifikasi string) {
   // Set up authentication information.
 	auth := smtp.PlainAuth(
 		"",

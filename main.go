@@ -25,76 +25,20 @@ var store = sessions.NewCookieStore([]byte("something-very-secret-rahasia"))
 func DrawMenu(w http.ResponseWriter){
   w.Header().Set("Content-Type", "text/html")
   io.WriteString(w, "<a href='/'>HOME <ba><br/>" + "\n")
-  // io.WriteString(w, "<a href='/readcookie'>Read Cookie <ba><br/>" + "\n")
-  // io.WriteString(w, "<a href='/writecookie'>Write Cookie <ba><br/>" + "\n")
-  // io.WriteString(w, "<a href='/deletecookie'>Delete Cookie <ba><br/>" + "\n")
   io.WriteString(w, "<a href='/login'>Login <ba><br/>" + "\n")
   io.WriteString(w, "<a href='/register'>Register <ba><br/>" + "\n")
 
 }
 
-// set session in login ketika ada cookie
-// di welcome ada button logout
-
-// register page
-// alurnya
-// the func register
-
-// testing algo
-// deploy
+/* TODO
+    deploy on heroku
+*/
 
 func IndexServer(w http.ResponseWriter, req *http.Request) {
   // draw menu
   DrawMenu(w)
 }
 
-
-func ReadCookieServer(w http.ResponseWriter, req *http.Request) {
-
-  // draw menu
-  DrawMenu(w)
-
-  // read cookie
-  var cookie,err = req.Cookie("testcookiename")
-  if err == nil {
-    var cookievalue = cookie.Value
-    io.WriteString(w, "<b>get cookie value is " + cookievalue + "</b>\n")
-  }
-
-}
-
-func WriteCookieServer(w http.ResponseWriter, req *http.Request) {
-  // set cookies.
-  expire := time.Now().AddDate(0, 1, 0)
-  cookie := http.Cookie{Name: "testcookiename", Value: "testcookievalue", Path: "/", Expires: expire/*, MaxAge: 86400 *  30*/}
-
-  http.SetCookie(w, &cookie)
-
-  //
-  // we can not set cookie after writing something to ResponseWriter
-  // if so ,we cannot set cookie succefully.
-  //
-  // so we have draw menu after set cookie
-  DrawMenu(w)
-
-}
-
-
-func DeleteCookieServer(w http.ResponseWriter, req *http.Request) {
-
-  // set cookies.
-  cookie := http.Cookie{Name: "testcookiename", Path: "/", MaxAge: -1}
-  http.SetCookie(w, &cookie)
-
-  // ABOUT MaxAge
-  // MaxAge=0 means no 'Max-Age' attribute specified.
-  // MaxAge<0 means delete cookie now, equivalently 'Max-Age: 0'
-  // MaxAge>0 means Max-Age attribute present and given in seconds
-
-  // draw menu
-  DrawMenu(w)
-
-}
 
 func register(res http.ResponseWriter, req *http.Request) {
   if req.Method != "POST" {
@@ -107,9 +51,8 @@ func register(res http.ResponseWriter, req *http.Request) {
   password := req.FormValue("password")
   password2 := req.FormValue("password")
 
-  // password tidak sama
+  // password doesn't match
   if password != password2 {
-    fmt.Println("password tidak sama")
     http.Redirect(res, req, "/register", 301)
 		return
   }
@@ -119,26 +62,24 @@ func register(res http.ResponseWriter, req *http.Request) {
   // cek username
 	errQuery := db.QueryRow("SELECT  username FROM users WHERE username=?", username).Scan(&databaseUsername)
 
-  // ada user di database, kembali ke login
+  // username already taken
 	if errQuery == nil {
     fmt.Println("ada user di database, kembali ke login")
 		http.Redirect(res, req, "/register", 301)
 		return
 	}
 
-  // enkrip password
-  fmt.Println("password awal: ", password)
+  // encrypt password
+  fmt.Println("original password: ", password)
   // scytale
   password  = kriptoalgo.Scytale(password)
   fmt.Println("scytale: ",password)
-  // transposisi
+  // transposition
   password  = kriptoalgo.Transposisi(password)
-  fmt.Println("transposisi: ",password)
+  fmt.Println("transposition: ",password)
   // // caesar
   password  = kriptoalgo.Caesar(password)
   fmt.Println("Caesar: ",password)
-  // return
-
 
   // insert user ke database
   _, err = db.Exec("INSERT INTO users(username, email, password) VALUES(?, ?, ?)", username, email, password)
@@ -146,28 +87,14 @@ func register(res http.ResponseWriter, req *http.Request) {
 
   http.Redirect(res, req, "/login", 301)
   return
-
-
-
 }
 
-// res http.ResponseWriter, req *http.Request
 func login(res http.ResponseWriter, req *http.Request) {
 
-
   if req.Method != "POST" {
-
     http.ServeFile(res, req, "login.html")
     return
   }
-
-
-  // userName := sess.CAttr("UserName")
-  // fmt.Println(userName)
-  //
-  // return
-
-
 
   username := req.FormValue("username")
 	password := req.FormValue("password")
@@ -177,24 +104,23 @@ func login(res http.ResponseWriter, req *http.Request) {
   var databaseEmail string
 	var databasePassword string
 
-  // cek username
+  // check username in databse
 	errQuery := db.QueryRow("SELECT id, email, username, password FROM users WHERE username=?", username).Scan(&databaseUserId, &databaseEmail, &databaseUsername, &databasePassword)
 
+  // there is no user in db
 	if errQuery != nil {
-    fmt.Println("ga ada user di database")
 		http.Redirect(res, req, "/login", 301)
 		return
 	}
 
-  // cek password
-
+  // check password
   // scytale
   password  = kriptoalgo.Scytale(password)
   fmt.Println("scytale: ",password)
-  // transposisi
+  // transposition
   password  = kriptoalgo.Transposisi(password)
-  fmt.Println("transposisi: ",password)
-  // // caesar
+  fmt.Println("transposition: ",password)
+  // caesar
   password  = kriptoalgo.Caesar(password)
   fmt.Println("Caesar: ",password)
 
@@ -203,30 +129,19 @@ func login(res http.ResponseWriter, req *http.Request) {
 		return
   }
 
-  // cek cookie dari client
-  // jika tidak ada cookie langsung ke validasi page, generate kode, kirim email, insert ke database kodenya
+  // check cookie in client
+  // if there is no cookie, go to validation page, generate code, email and insert ot db the code
   var cookie,err = req.Cookie("testcookiename")
   // tidak ada cookie
   if err != nil {
-    fmt.Println("tidak ada cookie di client")
-
     createVerificationCode(res, req, databaseUserId, databaseEmail) // create kode, insert ke db, kirim ke email
     return
   }
 
-  // ada cookie di client
-  // select cookies di database berdasarkan user id, value cookie-nya dan statusnya aktif
-  // jika ada set session, masuk ke index
-  // jika tidak ada createVerificationCode
-
-  // INI SEBELUM REVISI
-  // get all cookie related to user in db and active.
-  // cocokan cookies in db and client
-  // jika cocok, masuk ke index
-  //jika tidak cocok ke validasi page, generate kode, kirim email, insert ke db kodenya
-  fmt.Println("ada cookie")
-  fmt.Println("cookienya yaitu " + cookie.Value)
-
+  // there is a cookie in client
+  // select cookies in database based on user id, value cookie-nya and status
+  // if cookie in client match with cookie in db, set session, go to index page
+  // else createVerificationCode
   var cnt int
 
   errQuery = db.QueryRow("SELECT COUNT(*) FROM cookies WHERE active=1 and user_id=? and cookie_value=?", databaseUserId, cookie.Value).Scan(&cnt)
@@ -236,44 +151,12 @@ func login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-  fmt.Println("banyaknya cookie adalah ", cnt)
-
+  // cookies does not match
   if cnt == 0 {
-    fmt.Println("cookie dari client tidak cocok dengan di db ")
     createVerificationCode(res, req, databaseUserId, databaseEmail) // create kode, insert ke db, kirim ke email
 		return
-  } else {
-    fmt.Println("cookie dari client cocok dengan di db ")
-    // HARUSNYA SET SESSION
-    // set SESSION
-    // // Get a session. Get() always returns a session, even if empty.
-    // session, err := store.Get(req, "session-name")
-    // if err != nil {
-    //    http.Error(res, err.Error(), http.StatusInternalServerError)
-    //    return
-    // }
-    //
-    // // Set some session values.
-    // session.Values["UserName"] = databaseUsername
-    // session.Values["authenticated"] = true
-    // // Save it before we write to the response/return from the handler.
-    // session.Save(req, res)
-    //
-    // fmt.Println("cek session dulu yaaa")
-    // // fmt.Println(session.Values["foo"])
-    //
-    // if session != nil {
-    //   fmt.Println("ada session bung fdsjfdlf")
-    //   http.Redirect(res, req, "/welcome", 301)
-    //   return
-    // } else {
-    //   fmt.Println("gagal set session")
-    //   http.Redirect(res, req, "/login", 301)
-    //   return
-    // }
+  } else { // cookies match
 
-
-    // not working
     sess := session.NewSessionOptions(&session.SessOptions{
         CAttrs: map[string]interface{}{"UserName": databaseUsername},
     })
@@ -292,93 +175,17 @@ func login(res http.ResponseWriter, req *http.Request) {
       http.Redirect(res, req, "/login", 301)
       return
     }
-
-    // http.Redirect(res, req, "/welcome", 301)
-    // return
   }
-
-
-
-
-  // rows, err := db.Query("SELECT code FROM cookies WHERE active=1 and user_id=? and cookie_value=?", databaseUserId, cookie.Value)
-  // if err != nil {
-  //   log.Fatal(err)
-  // }
-  // defer rows.Close()
-  //
-  //
-  //
-  // var dbCookies []string
-  // var code string
-  //
-  // for rows.Next() {
-  //   err := rows.Scan(&code)
-  //   if err != nil {
-  //     log.Fatal(err)
-  //     fmt.Println(err)
-  //   }
-  //   // push to slice cookie
-  //   dbCookies = append(dbCookies, code)
-  // }
-  // err = rows.Err()
-  // if err != nil {
-  //   log.Fatal(err)
-  // }
-  //
-  // // cek cookie di db ada ga
-  // if len(dbCookies) == 0 { // ga ada di db
-  //   fmt.Println("ga ada di db")
-  //
-  //   createVerificationCode(res, req, databaseUserId, databaseEmail) // create kode, insert ke db, kirim ke email
-  //   return
-  //
-  // } else {
-  //   // ada cookies di db, cocokan dengan coockie client
-  //   fmt.Println("ada di db")
-  //
-  //   // search cookie
-  //   for i := range dbCookies {
-  //     if dbCookies[i] == cookie.Value {
-  //       // Found!
-  //       fmt.Println("cookie cocok antara db dan dari client, boleh masuk ke index")
-  //       // HARUSNYA SET SESSION
-  //       http.Redirect(res, req, "/index", 301)
-  //       break
-  //     }
-  //   }
-  //
-  //   // cookie ga cocok andara db dan client
-  //   fmt.Println("cookie ga cocok antara db dan client")
-  //
-  //   createVerificationCode(res, req, databaseUserId, databaseEmail) // create kode, insert ke db, kirim ke email
-  //   return
-  // }
-  //
-  // /* jika ada cookie
-  //       select all cookie in database related to the user
-  //       cocokkan dengan cookies di db dan di browser user
-  //       jika ada masuk ke index page
-  //       jika tidak ada yg cocok masuk ke validasi page, generate kode, kirim email
-  // */
-
-
 }
 
 
-
-
 func verification(res http.ResponseWriter, req *http.Request) {
+
   sess := session.Get(req)
   if sess != nil {
-    fmt.Println("ada session")
     http.Redirect(res, req, "/welcome", 301)
     return
   }
-  // else {
-  //   fmt.Println("ga ada session")
-  //   http.Redirect(res, req, "/login", 301)
-  //   return
-  // }
 
   if req.Method != "POST" {
     http.ServeFile(res, req, "verification.html")
@@ -386,14 +193,13 @@ func verification(res http.ResponseWriter, req *http.Request) {
   }
 
   /*  method POST
-      kode dari client
-      get all cookie code di db based on kode verifikasi dan status not active
-      kode dari client cocok dengan cookie code di db
-      jika ya,
+      verification code from client
+      get all cookie code in db based on verfication code and status not active
+      if code verfication match
         generate cookie
-        update status cookie dan tambahakn generate cookie  menjadi aktif,
-        set session dan masuk ke index
-      jika return halaman verification dengan pesan error
+        update status cookie dan add cookie value, status active in db
+        set session and go to index page
+      else return to verification page with error message (error message do not finish yet)
   */
 
   codeClient := req.FormValue("code")
@@ -407,25 +213,20 @@ func verification(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+  // verification code does not match
   if cnt == 0 {
-    fmt.Println("kode verifikasi tidak sesuai dengan yang di database ")
-    // harusnya dengan pesan error
     http.Redirect(res, req, "/verification", 301)
 		return
-  } else {
-    fmt.Println("kode verifikasi sesuai dengan yang di database ")
-    // LIAT FLOWCHART
-    // UPDATE STATUS CREATE COOKIE STORE IN DB
-    // HARUSNYA SET SESSION
+  } else { // match verification code
 
-    // buat cookie
+    // create cookie
     expire := time.Now().AddDate(0, 1, 0)
     cookievalue := randstring.RandomStringForCookie(25)
     cookie := http.Cookie{Name: "testcookiename", Value: cookievalue, Path: "/", Expires: expire/*, MaxAge: 86400*/}
 
-    http.SetCookie(res, &cookie)
+    http.SetCookie(res, &cookie) // set cookie
 
-    // insert kedatabase cookie value nya
+    // insert  cookie value to db
     stmt, err := db.Prepare("UPDATE cookies set active = ?, cookie_value = ? where code=?")
     checkErr(err)
     _, err = stmt.Exec(1, cookievalue, codeClient)
@@ -442,120 +243,43 @@ func verification(res http.ResponseWriter, req *http.Request) {
     })
     session.Add(sess, res)
     userName := sess.CAttr("UserName")
-    fmt.Println(userName)
 
     if sess != nil {
-        // No session (yet)
-        // ada session
-        fmt.Println("ada session")
+        // session already set
         http.Redirect(res, req, "/welcome", 301)
         return
     }
-
   }
 }
 
 func welcome(res http.ResponseWriter, req *http.Request) {
 
-  // // Get a session. Get() always returns a session, even if empty.
-  // session, err := store.Get(req, "session-name")
-  // if err != nil {
-  //    http.Error(res, err.Error(), http.StatusInternalServerError)
-  //    return
-  // }
-  //
-  //
-  // fmt.Println("cek session dulu yaaa di welcome")
-  // // fmt.Println(session.Values["foo"])
-  //
-  // if session.Values["authenticated"] == true {
-  //   fmt.Println("ada session bung fdsjfdlf")
-  //   http.ServeFile(res, req, "welcome.html")
-  //   return
-  // } else {
-  //   fmt.Println("gagal set session")
-  //   http.Redirect(res, req, "/login", 301)
-  //   return
-  // }
-
   sess := session.Get(req)
-  // userName := sess.CAttr("UserName")
-  // fmt.Println(userName)
-  //
-  // return
 
   if sess == nil {
       // No session (yet)
       http.Redirect(res, req, "/login", 301)
       return
   } else {
-    // cek session dulu harusnya
     http.ServeFile(res, req, "welcome.html")
     userName := sess.CAttr("UserName")
-    fmt.Println(userName)
     return
   }
-
-
 }
 
-func dfsfsdfdsfsd(res http.ResponseWriter, req *http.Request) {
-  // session, err := store.Get(req, "session-name")
-  //
-  // if req.Method != "POST" {
-  //
-  //   // Get a session. Get() always returns a session, even if empty.
-  //
-  //   if err != nil {
-  //      http.Error(res, err.Error(), http.StatusInternalServerError)
-  //      return
-  //   }
-  //
-  //
-  //   fmt.Println("cek session dulu yaaa di logout")
-  //   // fmt.Println(session.Values["foo"])
-  //
-  //   session.Values["authenticated"] = false
-  //   session.Values["UserName"] = ""
-  //   session.Save(req, res)
-  //
-  //   if session.Values["authenticated"] == false {
-  //     fmt.Println("udah logout bung masuk ke login")
-  //     http.Redirect(res, req, "/login", 301)
-  //     return
-  //   } else {
-  //     fmt.Println("belum logout")
-  //     http.Redirect(res, req, "/welcome", 301)
-  //     return
-  //   }
-  // }
-  //
+/*
+TODO fix logout/destroy session
+logout not working properly, icza/session library failed to delete the session when logout
+*/
 
-
-
-
+func logout(res http.ResponseWriter, req *http.Request) {
   sess := session.Get(req)
-  fmt.Println("akfdsjldjfs")
-  log.Println("Session:", sess)
-
-  if sess == nil {
-      // tidak ada session
-      fmt.Println("tidak ada session bung towel")
-  } else {
-    fmt.Println("ada session bung towel")
-  }
-
-  userName := sess.CAttr("UserName")
-  fmt.Println(userName)
 
   session.Remove(sess, res)
   sess = nil
 
   return
   http.Redirect(res, req, "/login", 301)
-
-
-
 }
 
 
@@ -576,17 +300,12 @@ func main() {
   }
 
   http.HandleFunc("/", IndexServer)
-  http.HandleFunc("/readcookie", ReadCookieServer)
-  http.HandleFunc("/writecookie", WriteCookieServer)
-  http.HandleFunc("/deletecookie", DeleteCookieServer)
 
   http.HandleFunc("/welcome", welcome)
   http.HandleFunc("/login", login)
   http.HandleFunc("/register", register)
   http.HandleFunc("/verification", verification)
-  http.HandleFunc("/logout", dfsfsdfdsfsd)
-
-
+  http.HandleFunc("/logout", logout)
 
   fmt.Println("listen on 3000")
   err := http.ListenAndServe(":3000", context.ClearHandler(http.DefaultServeMux))
@@ -598,19 +317,17 @@ func main() {
 
 
 func createVerificationCode(res http.ResponseWriter, req *http.Request, databaseUserId int, databaseEmail string) {
-  // generate kode yang akan dikirim lewat email
+  // generate verification code
   var randString string = randstring.RandomStringForVerify(6)
   fmt.Println(randString)
-  // insert kedatabase kodenya
+  // insert the code to db
   _, err = db.Exec("INSERT INTO cookies(user_id, code) VALUES(?, ?)", databaseUserId, randString)
   if err != nil { http.Error(res, "Server error, unable to create your account.", 500); return; }
-  // kirim email
+  // send email the code
   email.SendMail(databaseEmail, randString)
-  // redirect ke vilidasi page
+
   http.Redirect(res, req, "/verification", 301)
-
 }
-
 
 func checkErr(err error) {
   if err != nil {
