@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Verification Page</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="col-md-offset-4 col-md-4  col-xs-offset-1 col-xs-8">
+        <form class="form-signin" method="post" action="verification">
+          <div class="form-group">
+            <h3 class="form-signin-heading text-center">Verifikasi diri Anda</h3>
+            <h5>Perangkat ini tidak dikenali. Demi keamanan, kami ingin memastikan ini memang Anda.</h5>
+            <p></p>
+
+          </div>
+          <div class="form-group">
+            <strong><p>Masukkan kode verifikasi yang telah kami kirimkan ke email Anda</p></strong>
+          </div>
+
+          <div class="form-group">
+            <label class="sr-only">Kode Verifikasi</label>
+            <input type="text" id="verify_code" name="code" class="form-control" placeholder="Kode Verifikasi" required autofocus>
+          </div>
+
+          <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+        </form>
+      </div>
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!-- <script src="../../../../assets/js/ie10-viewport-bug-workaround.js"></script> -->
+  </body>
+</html>
